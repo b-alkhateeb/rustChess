@@ -6,7 +6,7 @@ use crate::piece::Color;
 use crate::board::Board;
 use crate::position::*;
 
-pub fn find_all_legal_moves(board: &Board, turn: Color) -> Vec<Move> {
+pub fn find_all_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
     let mut res: Vec<Move> = vec![];
 
     for rank in 0..8 {
@@ -26,6 +26,7 @@ pub fn find_all_legal_moves(board: &Board, turn: Color) -> Vec<Move> {
         }
     }
     
+    res.extend(find_en_passant_moves(board, turn, move_history));
     return res;
 }
 
@@ -128,7 +129,7 @@ fn find_pawn_legal_moves(board: &Board, position: Square, color: Color) -> Vec<M
                 from: position.clone(),
                 to: to_pos.clone(),
                 piece: board[position.rank][position.file].clone(),
-                special_move: None,
+                special_move: Some(SpecialMoveType::PawnLongMove),
             };
             if position.rank == 1 {
                 if board[to_pos.rank][to_pos.file].color == Color::Null {
@@ -175,7 +176,7 @@ fn find_pawn_legal_moves(board: &Board, position: Square, color: Color) -> Vec<M
                 from: position.clone(),
                 to: to_pos.clone(),
                 piece: board[position.rank][position.file].clone(),
-                special_move: None,
+                special_move: Some(SpecialMoveType::PawnLongMove),
             };
             if position.rank == 6 {
                 if board[to_pos.rank][to_pos.file].color == Color::Null {
@@ -251,7 +252,7 @@ pub fn remove_moves_leading_to_check(legal_moves: &mut Vec<Move>, board: &Board,
         
         // find all legal moves for the opponent 
         let fake_turn = if turn == White {Black} else {White};
-        let fake_legal_moves = find_all_legal_moves(&fake_board, fake_turn);
+        let fake_legal_moves = find_all_legal_moves(&fake_board, fake_turn, &vec![]); // I think we can get away without the move history here?
 
         // locate the current player's king
         let mut king_position: Square = Square {rank: 8, file: 8};
@@ -274,4 +275,83 @@ pub fn remove_moves_leading_to_check(legal_moves: &mut Vec<Move>, board: &Board,
         true
     });
 
+}
+
+pub fn find_en_passant_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
+    let mut res = vec![];
+    let last_played_move_opt = move_history.last();
+
+    if last_played_move_opt == None {
+        return res;
+    }
+
+    let last_played_move = last_played_move_opt.unwrap();
+
+    // last_played_move being PawnLongMove also implies that the color is opposite to turn
+    // and that the piece is a pawn
+    if last_played_move.special_move == Some(SpecialMoveType::PawnLongMove) {
+        if turn == Color::White {
+            // posible positions for a pawn to be able to take the last moved pawn enpassant
+            let possible_position_1 = move_right(last_played_move.to.clone());
+            let possible_position_2 = move_left(last_played_move.to.clone());
+
+            // Some assumptions are valid here hence the unwraps
+            // since the last move is a PawnLongMove, we know that the square behind it is free
+            // we also know that it won't cross the board boundaries
+
+            if let Ok(pos) = possible_position_1 {
+                if board[pos.rank][pos.file].piece == PieceType::Pawn && board[pos.rank][pos.file].color == Color::White {
+                    res.push(Move {
+                        from: pos.clone(),
+                        to: move_up_left(pos.clone()).unwrap(),
+                        piece: board[pos.rank][pos.file].clone(),
+                        special_move: Some(SpecialMoveType::EnPassant),
+                    });
+                }
+            }
+
+            if let Ok(pos) = possible_position_2 {
+                if board[pos.rank][pos.file].piece == PieceType::Pawn && board[pos.rank][pos.file].color == Color::White {
+                    res.push(Move {
+                        from: pos.clone(),
+                        to: move_up_right(pos.clone()).unwrap(),
+                        piece: board[pos.rank][pos.file].clone(),
+                        special_move: Some(SpecialMoveType::EnPassant),
+                    });
+                }
+            }
+        } else if turn == Color::Black {
+            // posible positions for a pawn to be able to take the last moved pawn enpassant
+            let possible_position_1 = move_right(last_played_move.to.clone());
+            let possible_position_2 = move_left(last_played_move.to.clone());
+
+            // Some assumptions are valid here hence the unwraps
+            // since the last move is a PawnLongMove, we know that the square behind it is free
+            // we also know that it won't cross the board boundaries
+
+            if let Ok(pos) = possible_position_1 {
+                if board[pos.rank][pos.file].piece == PieceType::Pawn && board[pos.rank][pos.file].color == Color::Black {
+                    res.push(Move {
+                        from: pos.clone(),
+                        to: move_down_left(pos.clone()).unwrap(),
+                        piece: board[pos.rank][pos.file].clone(),
+                        special_move: Some(SpecialMoveType::EnPassant),
+                    });
+                }
+            }
+
+            if let Ok(pos) = possible_position_2 {
+                if board[pos.rank][pos.file].piece == PieceType::Pawn && board[pos.rank][pos.file].color == Color::Black {
+                    res.push(Move {
+                        from: pos.clone(),
+                        to: move_down_right(pos.clone()).unwrap(),
+                        piece: board[pos.rank][pos.file].clone(),
+                        special_move: Some(SpecialMoveType::EnPassant),
+                    });
+                }
+            }
+        }
+    }
+
+    res
 }

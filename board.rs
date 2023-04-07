@@ -50,7 +50,7 @@ pub fn print_board(board: Board) {
     ]);
 
     print!("  ABCDEFGH");
-    let mut i = 0;
+    //let mut i = 0;
     for i in 0..8 {
         println!();
         print!("{} ", 8-i);

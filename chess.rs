@@ -6,10 +6,11 @@ mod legal_moves;
 
 /*
 TODO
-    en passant  --- should be doable with move history now
-    castling long and short, never moved and won't be in check
     queening
-    evaluate win or draw
+    evaluate win (checkmates)
+        stalemate
+        50 move draw rule
+        3 fold repetition
 */
 
 use crate::piece::Piece;
@@ -116,6 +117,22 @@ fn play_move(board: &mut Board, input_move: Move) {
         } else if input_move.piece.color == Color::Black {
             let captured_pawn_square = move_up(input_move.to.clone()).unwrap();
             board[captured_pawn_square.rank][captured_pawn_square.file] = Piece {piece: PieceType::Null, color: Color::Null};
+        }
+    } else if input_move.special_move == Some(SpecialMoveType::CastleLong) {
+        if input_move.piece.color == Color::White {
+            board[0][0] = Piece {piece: PieceType::Null, color: Color::Null};
+            board[0][3] = Piece {piece: PieceType::Rook, color: Color::White};
+        } else if input_move.piece.color == Color::Black {
+            board[7][0] = Piece {piece: PieceType::Null, color: Color::Null};
+            board[7][3] = Piece {piece: PieceType::Rook, color: Color::Black};
+        }
+    } else if input_move.special_move == Some(SpecialMoveType::CastleShort) {
+        if input_move.piece.color == Color::White {
+            board[0][7] = Piece {piece: PieceType::Null, color: Color::Null};
+            board[0][5] = Piece {piece: PieceType::Rook, color: Color::White};
+        } else if input_move.piece.color == Color::Black {
+            board[7][7] = Piece {piece: PieceType::Null, color: Color::Null};
+            board[7][5] = Piece {piece: PieceType::Rook, color: Color::Black};
         }
     }
 }

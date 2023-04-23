@@ -16,9 +16,10 @@ pub fn setup_test_board(board: &mut Board) {
 }
 
 pub fn setup_board(board: &mut Board) {
-    board[1][0] = Piece {piece: Pawn, color: Black};
+    board[0][0] = Piece {piece: King, color: Black};
 
-    board[6][7] = Piece {piece: Pawn, color: White};
+    board[2][0] = Piece {piece: King, color: White};
+    board[1][7] = Piece {piece: Queen, color: White};
     /*board[0][0] = Piece {piece: Rook, color: White};
     board[0][1] = Piece {piece: Knight, color: White};
     board[0][2] = Piece {piece: Bishop, color: White};

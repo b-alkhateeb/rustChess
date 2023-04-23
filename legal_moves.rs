@@ -9,7 +9,7 @@ use crate::position::*;
 pub fn find_all_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
     let mut res: Vec<Move> = vec![];
 
-    res.extend(find_basic_legal_moves(board, turn, move_history));
+    res.extend(find_basic_legal_moves(board, turn));
     
     res.extend(find_en_passant_moves(board, turn, move_history));
     res.extend(find_castling_moves(board, turn, move_history));
@@ -18,7 +18,7 @@ pub fn find_all_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>
     return res;
 }
 
-pub fn find_basic_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
+pub fn find_basic_legal_moves(board: &Board, turn: Color) -> Vec<Move> {
     let mut res: Vec<Move> = vec![];
 
     for rank in 0..8 {
@@ -263,7 +263,7 @@ pub fn remove_moves_leading_to_check(legal_moves: &mut Vec<Move>, board: &Board,
         
         // find all legal moves for the opponent 
         let fake_turn = if turn == White {Black} else {White};
-        let fake_legal_moves = find_basic_legal_moves(&fake_board, fake_turn, &vec![]); // I think we can get away without the move history and special moves here?
+        let fake_legal_moves = find_basic_legal_moves(&fake_board, fake_turn); // I think we can get away without the move history and special moves here?
 
         // locate the current player's king
         let mut king_position: Square = Square {rank: 8, file: 8};
@@ -423,6 +423,10 @@ pub fn white_can_castle_long(board: &Board, move_history: &Vec<Move>) -> bool {
             }
         }
     }
+    // extra check for non-standard initial positions
+    if board[4][0].piece != PieceType::King && board[4][0].color != Color::White {
+        king_rook_never_moved = false;
+    }
 
     let no_pieces_block_castle = board[0][1].piece == PieceType::Null 
         && board[0][2].piece == PieceType::Null
@@ -464,6 +468,10 @@ pub fn white_can_castle_short(board: &Board, move_history: &Vec<Move>) -> bool {
             }
         }
     }
+    // extra check for non-standard initial positions
+    if board[4][0].piece != PieceType::King && board[4][0].color != Color::White {
+        king_rook_never_moved = false;
+    }
 
     let no_pieces_block_castle = board[0][5].piece == PieceType::Null 
         && board[0][6].piece == PieceType::Null;
@@ -503,6 +511,10 @@ pub fn black_can_castle_long(board: &Board, move_history: &Vec<Move>) -> bool {
                 break;
             }
         }
+    }
+    // extra check for non-standard initial positions
+    if board[4][7].piece != PieceType::King && board[4][7].color != Color::Black {
+        king_rook_never_moved = false;
     }
 
     let no_pieces_block_castle = board[7][1].piece == PieceType::Null 
@@ -544,6 +556,10 @@ pub fn black_can_castle_short(board: &Board, move_history: &Vec<Move>) -> bool {
                 break;
             }
         }
+    }
+    // extra check for non-standard initial positions
+    if board[4][7].piece != PieceType::King && board[4][7].color != Color::Black {
+        king_rook_never_moved = false;
     }
 
     let no_pieces_block_castle = board[7][5].piece == PieceType::Null 

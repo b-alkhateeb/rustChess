@@ -6,11 +6,10 @@ mod legal_moves;
 
 /*
 TODO
-    queening
     evaluate win (checkmates)
         stalemate
         50 move draw rule
-        3 fold repetition
+        3 fold repetition ----> this is hard, might need to store all positions in a map with count?
 */
 
 use crate::piece::Piece;
@@ -56,6 +55,9 @@ fn main() {
             if legal_move.from == input_move.from && legal_move.to == input_move.to {
                 play_move(&mut board, legal_move.clone());
                 move_history.push(legal_move.clone());
+                if legal_move.special_move == Some(SpecialMoveType::Promote) {
+                    prompt_promotion(&mut board, legal_move.to.clone());
+                }
                 turn = if turn == White {Black} else {White};
                 move_played_flag = true;
             }
@@ -134,5 +136,30 @@ fn play_move(board: &mut Board, input_move: Move) {
             board[7][7] = Piece {piece: PieceType::Null, color: Color::Null};
             board[7][5] = Piece {piece: PieceType::Rook, color: Color::Black};
         }
+    }
+}
+
+fn prompt_promotion(board: &mut Board, square: Square) {
+    loop {
+       println!("Which piece would you like to promote to (enter Q,K,B,R)");
+
+        let mut user_input = String::new();
+        let _b = match std::io::stdin().read_line(&mut user_input) {
+            Ok(v) => v,
+            _ => {println!("Illegal input, please enter Q, K, B, or R"); continue}
+        };
+    
+        if vec!['Q', 'K', 'B', 'R'].contains(&user_input.chars().nth(0).unwrap()) {
+            match user_input.chars().nth(0).unwrap() {
+                'Q' => board[square.rank][square.file].piece = PieceType::Queen,
+                'K' => board[square.rank][square.file].piece = PieceType::Knight,
+                'B' => board[square.rank][square.file].piece = PieceType::Bishop,
+                'R' => board[square.rank][square.file].piece = PieceType::Rook,
+                _ => {}
+            }
+            break;
+        }
+
+        println!("Illegal input, please enter Q, K, B, or R");
     }
 }

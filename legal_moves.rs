@@ -129,7 +129,7 @@ fn find_pawn_legal_moves(board: &Board, position: Square, color: Color) -> Vec<M
                 from: position.clone(),
                 to: to_pos.clone(),
                 piece: board[position.rank][position.file].clone(),
-                special_move: None,
+                special_move: if to_pos.rank == 7 {Some(SpecialMoveType::Promote)} else {None},
             };
             if board[to_pos.rank][to_pos.file].color == Color::Null {
                 res.push(move_under_consideration);
@@ -153,7 +153,7 @@ fn find_pawn_legal_moves(board: &Board, position: Square, color: Color) -> Vec<M
                 from: position.clone(),
                 to: to_pos.clone(),
                 piece: board[position.rank][position.file].clone(),
-                special_move: None,
+                special_move: if to_pos.rank == 7 {Some(SpecialMoveType::Promote)} else {None},
             };
             if board[to_pos.rank][to_pos.file].color == Color::Black {
                 res.push(move_under_consideration);
@@ -164,7 +164,7 @@ fn find_pawn_legal_moves(board: &Board, position: Square, color: Color) -> Vec<M
                 from: position.clone(),
                 to: to_pos.clone(),
                 piece: board[position.rank][position.file].clone(),
-                special_move: None,
+                special_move: if to_pos.rank == 7 {Some(SpecialMoveType::Promote)} else {None},
             };
             if board[to_pos.rank][to_pos.file].color == Color::Black {
                 res.push(move_under_consideration);
@@ -176,7 +176,7 @@ fn find_pawn_legal_moves(board: &Board, position: Square, color: Color) -> Vec<M
                 from: position.clone(),
                 to: to_pos.clone(),
                 piece: board[position.rank][position.file].clone(),
-                special_move: None,
+                special_move: if to_pos.rank == 0 {Some(SpecialMoveType::Promote)} else {None},
             };
             if board[to_pos.rank][to_pos.file].color == Color::Null {
                 res.push(move_under_consideration);
@@ -200,7 +200,7 @@ fn find_pawn_legal_moves(board: &Board, position: Square, color: Color) -> Vec<M
                 from: position.clone(),
                 to: to_pos.clone(),
                 piece: board[position.rank][position.file].clone(),
-                special_move: None,
+                special_move: if to_pos.rank == 0 {Some(SpecialMoveType::Promote)} else {None},
             };
             if board[to_pos.rank][to_pos.file].color == Color::White {
                 res.push(move_under_consideration);
@@ -211,7 +211,7 @@ fn find_pawn_legal_moves(board: &Board, position: Square, color: Color) -> Vec<M
                 from: position.clone(),
                 to: to_pos.clone(),
                 piece: board[position.rank][position.file].clone(),
-                special_move: None,
+                special_move: if to_pos.rank == 0 {Some(SpecialMoveType::Promote)} else {None},
             };
             if board[to_pos.rank][to_pos.file].color == Color::White {
                 res.push(move_under_consideration);

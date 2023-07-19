@@ -14,6 +14,7 @@ pub fn find_all_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>
     res.extend(find_en_passant_moves(board, turn, move_history));
     res.extend(find_castling_moves(board, turn, move_history));
 
+    remove_moves_leading_to_check(&mut res, &board, turn);
 
     return res;
 }

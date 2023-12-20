@@ -6,9 +6,14 @@ mod legal_moves;
 
 /*
 TODO
-    50 move draw rule
+    50 move draw rule ----> one tricky thing is the Capture moves
+     - moves should store capture to support this (in the move history mainly)
+     - loop on move history, is there any capture or pawn move
     3 fold repetition ----> this is hard, might need to store all positions in a map with count?
     insufficient material?
+     - should be the easiest, list all pieces on the board ,the insufficient combinations are
+        [wk, bk], [wk,wb, bk], [wk,wk, bk],
+                  [wk, bk,bb], [wk, bk,bk]
 */
 
 use crate::piece::Piece;
@@ -25,7 +30,7 @@ use std::collections::HashMap;
 fn main() {
     let empty_piece = Piece {piece: PieceType::Null, color: Color::Null};
 
-    let mut move_history: Vec<Move> = Vec::new();
+    let mut move_history: Vec<MoveHistoryEntry> = Vec::new();
 
     let mut board: Board = [[empty_piece; 8]; 8];
     let mut turn: Color = White;
@@ -39,7 +44,7 @@ fn main() {
             println!("{:?}", legal_move);
         }
 
-        let game_result = evaluate_win_draw(turn, &board, &legal_moves);
+        let game_result = evaluate_win_draw(turn, &board, &legal_moves, &move_history);
         if let Some(result) = game_result {
             println!("{}", result);
             break;
@@ -67,8 +72,13 @@ fn main() {
         }
 
         if let Some(user_move) = user_legal_move {
+            move_history.push(MoveHistoryEntry {
+                moveEntry: user_move.clone(),
+                boardState: board.clone(),
+                isCaptureMove: board[user_move.to.rank][user_move.to.file].piece != PieceType::Null,
+            });
+
             play_move(&mut board, user_move.clone());
-            move_history.push(user_move.clone());
 
             if user_move.special_move == Some(SpecialMoveType::Promote) {
                 prompt_promotion(&mut board, user_move.to.clone());
@@ -181,7 +191,15 @@ fn prompt_promotion(board: &mut Board, square: Square) {
     }
 }
 
-fn evaluate_win_draw(turn: Color, board: &Board, legal_moves: &Vec<Move>) -> Option<String> {
+fn evaluate_win_draw(turn: Color, board: &Board, legal_moves: &Vec<Move>, move_history: &Vec<MoveHistoryEntry>) -> Option<String> {
+    if is_50_move_draw(move_history) {
+        return Some(format!("draw by 50 move rule"));
+    } else if is_3_fold_repetition_draw(move_history) {
+        return Some(format!("draw by 3 fold repetition"));
+    } else if is_insuffiecient_material_draw(board) {
+        return Some(format!("draw by insufficient material"));
+    }
+
     let opponent_turn = if turn == White {Black} else {White};
     let opponent_legal_moves = find_basic_legal_moves(&board, opponent_turn);
 
@@ -211,4 +229,57 @@ fn evaluate_win_draw(turn: Color, board: &Board, legal_moves: &Vec<Move>) -> Opt
     }
 
     return None;
+}
+
+fn is_50_move_draw(move_history: &Vec<MoveHistoryEntry>) -> bool {
+    // loop through the past 50 moves
+    // if captures anything, return false
+    // if pawm move, return false
+    // else, return true
+    return false;
+}
+
+fn is_insuffiecient_material_draw(board: &Board) -> bool {
+    let mut all_pieces_on_board: Vec<Piece> = Vec::new();
+    let mut non_king_pieces_on_board: Vec<(Piece, Color)> = Vec::new(); // piece and square color
+
+    for rank in 0..8 {
+        for file in 0..8 {
+            if board[rank][file].piece != PieceType::Null {
+                all_pieces_on_board.push(board[rank][file].clone())
+            }
+
+            if board[rank][file].piece != PieceType::Null && board[rank][file].piece != PieceType::King {
+                let square_color = if (rank+file)%2 == 0 {
+                    Color::White
+                } else {
+                    Color::Black
+                };
+                non_king_pieces_on_board.push((board[rank][file].clone(),square_color));
+            }
+        }
+    }
+
+    if all_pieces_on_board.len() == 2 { // king vs king
+        return true;
+    } else if all_pieces_on_board.len() == 3 { // king+bishop vs king or king+knight vs king
+        for piece in all_pieces_on_board {
+            if piece.piece == PieceType::Bishop || piece.piece == PieceType::Knight {
+                return true;
+            }
+        }
+    } else if all_pieces_on_board.len() == 4 { // king+bishop vs king+bishop same color bishops
+        if non_king_pieces_on_board.len() == 2 &&
+            non_king_pieces_on_board[0].0.piece == PieceType::Bishop && 
+            non_king_pieces_on_board[1].0.piece == PieceType::Bishop &&
+            non_king_pieces_on_board[0].1 == non_king_pieces_on_board[1].1 {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fn is_3_fold_repetition_draw(move_history: &Vec<MoveHistoryEntry>) -> bool {
+    return false;
 }

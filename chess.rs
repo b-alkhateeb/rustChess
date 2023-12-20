@@ -232,11 +232,26 @@ fn evaluate_win_draw(turn: Color, board: &Board, legal_moves: &Vec<Move>, move_h
 }
 
 fn is_50_move_draw(move_history: &Vec<MoveHistoryEntry>) -> bool {
-    // loop through the past 50 moves
-    // if captures anything, return false
-    // if pawm move, return false
-    // else, return true
-    return false;
+    // since a move is defined as white turn then black turn, 2*50 MoveHistoryEntry structs need to be considered
+    let move_history_len = move_history.len();
+    let mut start_index = 0;
+
+    if move_history_len < 100 { // 50 moves haven't even been played yet
+        return false;
+    } else {
+        start_index = move_history_len - 100;
+    }
+
+    for i in start_index..move_history_len {
+        if move_history[i].isCaptureMove {
+            return false;
+        }
+        if move_history[i].moveEntry.piece.piece == PieceType::Pawn {
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 fn is_insuffiecient_material_draw(board: &Board) -> bool {
@@ -281,5 +296,10 @@ fn is_insuffiecient_material_draw(board: &Board) -> bool {
 }
 
 fn is_3_fold_repetition_draw(move_history: &Vec<MoveHistoryEntry>) -> bool {
+    // need to serialize board state and legal moves
+    //let board_state = serde_json::to_string(&move_history.boardState) 
+
+    // count in move history the occurances of all states
+    // if any state occured 3 times, declare a draw
     return false;
 }

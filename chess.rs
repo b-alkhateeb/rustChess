@@ -8,6 +8,7 @@ mod legal_moves;
 TODO
     50 move draw rule
     3 fold repetition ----> this is hard, might need to store all positions in a map with count?
+    insufficient material?
 */
 
 use crate::piece::Piece;
@@ -34,7 +35,6 @@ fn main() {
         println!("Current turn is {:?}", turn);
 
         let mut legal_moves = find_all_legal_moves(&board, turn, &move_history);
-        remove_moves_leading_to_check(&mut legal_moves, &board, turn);
         for legal_move in legal_moves.iter() {
             println!("{:?}", legal_move);
         }

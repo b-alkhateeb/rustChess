@@ -9,6 +9,18 @@ use crate::position::*;
 pub fn find_all_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
     let mut res: Vec<Move> = vec![];
 
+    res.extend(find_basic_legal_moves(board, turn, move_history));
+    
+    res.extend(find_en_passant_moves(board, turn, move_history));
+    res.extend(find_castling_moves(board, turn, move_history));
+
+
+    return res;
+}
+
+pub fn find_basic_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
+    let mut res: Vec<Move> = vec![];
+
     for rank in 0..8 {
         for file in 0..8 {
             let pos = Square {file, rank};
@@ -25,9 +37,8 @@ pub fn find_all_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>
             }
         }
     }
-    
-    res.extend(find_en_passant_moves(board, turn, move_history));
-    return res;
+
+    return res
 }
 
 fn find_bishop_legal_moves(board: &Board, position: Square, color: Color) -> Vec<Move> {
@@ -252,7 +263,7 @@ pub fn remove_moves_leading_to_check(legal_moves: &mut Vec<Move>, board: &Board,
         
         // find all legal moves for the opponent 
         let fake_turn = if turn == White {Black} else {White};
-        let fake_legal_moves = find_all_legal_moves(&fake_board, fake_turn, &vec![]); // I think we can get away without the move history here?
+        let fake_legal_moves = find_basic_legal_moves(&fake_board, fake_turn, &vec![]); // I think we can get away without the move history and special moves here?
 
         // locate the current player's king
         let mut king_position: Square = Square {rank: 8, file: 8};
@@ -354,4 +365,208 @@ pub fn find_en_passant_moves(board: &Board, turn: Color, move_history: &Vec<Move
     }
 
     res
+}
+
+pub fn find_castling_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
+    let mut res = vec![];
+
+    if white_can_castle_long(board, move_history) && turn == Color::White {
+        res.push(Move {
+            from: Square{file: 4, rank: 0},
+            to: Square{file: 2, rank: 0},
+            piece: Piece {piece: PieceType::King, color: Color::White},
+            special_move: Some(SpecialMoveType::CastleLong),
+        })
+    }
+
+    if white_can_castle_short(board, move_history) && turn == Color::White {
+        res.push(Move {
+            from: Square{file: 4, rank: 0},
+            to: Square{file: 6, rank: 0},
+            piece: Piece {piece: PieceType::King, color: Color::White},
+            special_move: Some(SpecialMoveType::CastleShort),
+        })
+    }
+
+    if black_can_castle_long(board, move_history) && turn == Color::Black {
+        res.push(Move {
+            from: Square{file: 4, rank: 7},
+            to: Square{file: 2, rank: 7},
+            piece: Piece {piece: PieceType::King, color: Color::Black},
+            special_move: Some(SpecialMoveType::CastleLong),
+        })
+    }
+
+    if black_can_castle_short(board, move_history) && turn == Color::Black {
+        res.push(Move {
+            from: Square{file: 4, rank: 7},
+            to: Square{file: 6, rank: 7},
+            piece: Piece {piece: PieceType::King, color: Color::Black},
+            special_move: Some(SpecialMoveType::CastleShort),
+        })
+    }
+
+    return res;
+}
+
+pub fn white_can_castle_long(board: &Board, move_history: &Vec<Move>) -> bool {
+    let mut king_rook_never_moved: bool = true;
+    for hmove in move_history {
+        if hmove.piece.piece == PieceType::King && hmove.piece.color == Color::White {
+            king_rook_never_moved = false;
+            break;
+        }
+        if hmove.piece.piece == PieceType::Rook && hmove.piece.color == Color::White {
+            if hmove.from.file == 0 && hmove.from.rank == 0 {
+                king_rook_never_moved = false;
+                break;
+            }
+        }
+    }
+
+    let no_pieces_block_castle = board[0][1].piece == PieceType::Null 
+        && board[0][2].piece == PieceType::Null
+        && board[0][3].piece == PieceType::Null;
+
+    let mut hypothetical_king_moves = vec![Move {
+        from: Square{file: 4, rank: 0},
+        to: Square{file: 4, rank: 0},
+        piece: Piece {piece: PieceType::King, color: Color::White},
+        special_move: None,
+    }, Move {
+        from: Square{file: 4, rank: 0},
+        to: Square{file: 3, rank: 0},
+        piece: Piece {piece: PieceType::King, color: Color::White},
+        special_move: None,
+    }, Move {
+        from: Square{file: 4, rank: 0},
+        to: Square{file: 2, rank: 0},
+        piece: Piece {piece: PieceType::King, color: Color::White},
+        special_move: None,
+    }];
+    remove_moves_leading_to_check(&mut hypothetical_king_moves, board, Color::White);
+    let no_check_in_king_path = hypothetical_king_moves.len() == 3;
+
+    return king_rook_never_moved && no_pieces_block_castle && no_check_in_king_path;
+}
+
+pub fn white_can_castle_short(board: &Board, move_history: &Vec<Move>) -> bool {
+    let mut king_rook_never_moved: bool = true;
+    for hmove in move_history {
+        if hmove.piece.piece == PieceType::King && hmove.piece.color == Color::White {
+            king_rook_never_moved = false;
+            break;
+        }
+        if hmove.piece.piece == PieceType::Rook && hmove.piece.color == Color::White {
+            if hmove.from.file == 7 && hmove.from.rank == 0 {
+                king_rook_never_moved = false;
+                break;
+            }
+        }
+    }
+
+    let no_pieces_block_castle = board[0][5].piece == PieceType::Null 
+        && board[0][6].piece == PieceType::Null;
+
+    let mut hypothetical_king_moves = vec![Move {
+        from: Square{file: 4, rank: 0},
+        to: Square{file: 4, rank: 0},
+        piece: Piece {piece: PieceType::King, color: Color::White},
+        special_move: None,
+    }, Move {
+        from: Square{file: 4, rank: 0},
+        to: Square{file: 5, rank: 0},
+        piece: Piece {piece: PieceType::King, color: Color::White},
+        special_move: None,
+    }, Move {
+        from: Square{file: 4, rank: 0},
+        to: Square{file: 6, rank: 0},
+        piece: Piece {piece: PieceType::King, color: Color::White},
+        special_move: None,
+    }];
+    remove_moves_leading_to_check(&mut hypothetical_king_moves, board, Color::White);
+    let no_check_in_king_path = hypothetical_king_moves.len() == 3;
+
+    return king_rook_never_moved && no_pieces_block_castle && no_check_in_king_path;
+}
+
+pub fn black_can_castle_long(board: &Board, move_history: &Vec<Move>) -> bool {
+    let mut king_rook_never_moved: bool = true;
+    for hmove in move_history {
+        if hmove.piece.piece == PieceType::King && hmove.piece.color == Color::Black {
+            king_rook_never_moved = false;
+            break;
+        }
+        if hmove.piece.piece == PieceType::Rook && hmove.piece.color == Color::Black {
+            if hmove.from.file == 0 && hmove.from.rank == 7 {
+                king_rook_never_moved = false;
+                break;
+            }
+        }
+    }
+
+    let no_pieces_block_castle = board[7][1].piece == PieceType::Null 
+        && board[7][2].piece == PieceType::Null
+        && board[7][3].piece == PieceType::Null;
+
+    let mut hypothetical_king_moves = vec![Move {
+        from: Square{file: 4, rank: 7},
+        to: Square{file: 4, rank: 7},
+        piece: Piece {piece: PieceType::King, color: Color::Black},
+        special_move: None,
+    }, Move {
+        from: Square{file: 4, rank: 7},
+        to: Square{file: 3, rank: 7},
+        piece: Piece {piece: PieceType::King, color: Color::Black},
+        special_move: None,
+    }, Move {
+        from: Square{file: 4, rank: 7},
+        to: Square{file: 2, rank: 7},
+        piece: Piece {piece: PieceType::King, color: Color::Black},
+        special_move: None,
+    }];
+    remove_moves_leading_to_check(&mut hypothetical_king_moves, board, Color::Black);
+    let no_check_in_king_path = hypothetical_king_moves.len() == 3;
+
+    return king_rook_never_moved && no_pieces_block_castle && no_check_in_king_path;
+}
+
+pub fn black_can_castle_short(board: &Board, move_history: &Vec<Move>) -> bool {
+    let mut king_rook_never_moved: bool = true;
+    for hmove in move_history {
+        if hmove.piece.piece == PieceType::King && hmove.piece.color == Color::Black {
+            king_rook_never_moved = false;
+            break;
+        }
+        if hmove.piece.piece == PieceType::Rook && hmove.piece.color == Color::Black {
+            if hmove.from.file == 7 && hmove.from.rank == 0 {
+                king_rook_never_moved = false;
+                break;
+            }
+        }
+    }
+
+    let no_pieces_block_castle = board[7][5].piece == PieceType::Null 
+        && board[7][6].piece == PieceType::Null;
+
+    let mut hypothetical_king_moves = vec![Move {
+        from: Square{file: 4, rank: 7},
+        to: Square{file: 4, rank: 7},
+        piece: Piece {piece: PieceType::King, color: Color::Black},
+        special_move: None,
+    }, Move {
+        from: Square{file: 4, rank: 7},
+        to: Square{file: 5, rank: 7},
+        piece: Piece {piece: PieceType::King, color: Color::Black},
+        special_move: None,
+    }, Move {
+        from: Square{file: 4, rank: 7},
+        to: Square{file: 6, rank: 7},
+        piece: Piece {piece: PieceType::King, color: Color::Black},
+        special_move: None,
+    }];
+    remove_moves_leading_to_check(&mut hypothetical_king_moves, board, Color::Black);
+    let no_check_in_king_path = hypothetical_king_moves.len() == 3;
+
+    return king_rook_never_moved && no_pieces_block_castle && no_check_in_king_path;
 }

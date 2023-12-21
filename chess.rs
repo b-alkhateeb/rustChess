@@ -6,10 +6,8 @@ mod legal_moves;
 
 /*
 TODO
-    evaluate win (checkmates)
-        stalemate
-        50 move draw rule
-        3 fold repetition ----> this is hard, might need to store all positions in a map with count?
+    50 move draw rule
+    3 fold repetition ----> this is hard, might need to store all positions in a map with count?
 */
 
 use crate::piece::Piece;
@@ -33,10 +31,18 @@ fn main() {
     setup_board(&mut board);
     
     loop {
+        println!("Current turn is {:?}", turn);
+
         let mut legal_moves = find_all_legal_moves(&board, turn, &move_history);
         remove_moves_leading_to_check(&mut legal_moves, &board, turn);
         for legal_move in legal_moves.iter() {
             println!("{:?}", legal_move);
+        }
+
+        let game_result = evaluate_win_draw(turn, &board, &legal_moves);
+        if let Some(result) = game_result {
+            println!("{}", result);
+            break;
         }
 
         print_board(board);
@@ -50,22 +56,30 @@ fn main() {
             }
         };
 
-        let mut move_played_flag = false;
+        // the reason for this odd search is that the user input move
+        // won't have some details like special move type, input parsing could be improved
+        let mut user_legal_move = None;
         for legal_move in legal_moves.iter() {
             if legal_move.from == input_move.from && legal_move.to == input_move.to {
-                play_move(&mut board, legal_move.clone());
-                move_history.push(legal_move.clone());
-                if legal_move.special_move == Some(SpecialMoveType::Promote) {
-                    prompt_promotion(&mut board, legal_move.to.clone());
-                }
-                turn = if turn == White {Black} else {White};
-                move_played_flag = true;
+                user_legal_move = Some(legal_move.clone());
+                break;
             }
         }
 
-        if !move_played_flag {
+        if let Some(user_move) = user_legal_move {
+            play_move(&mut board, user_move.clone());
+            move_history.push(user_move.clone());
+
+            if user_move.special_move == Some(SpecialMoveType::Promote) {
+                prompt_promotion(&mut board, user_move.to.clone());
+            }
+
+            turn = if turn == White {Black} else {White};
+
+        } else {
             println!("illegal move, pick another");
         }
+
 
         println!("----");
         for hist_move in move_history.iter() {
@@ -73,6 +87,9 @@ fn main() {
         }
         println!("----");
     }
+
+
+    println!("Game Over");
 }
 
 fn read_input_move() -> Result<Move, ()> {
@@ -162,4 +179,36 @@ fn prompt_promotion(board: &mut Board, square: Square) {
 
         println!("Illegal input, please enter Q, K, B, or R");
     }
+}
+
+fn evaluate_win_draw(turn: Color, board: &Board, legal_moves: &Vec<Move>) -> Option<String> {
+    let opponent_turn = if turn == White {Black} else {White};
+    let opponent_legal_moves = find_basic_legal_moves(&board, opponent_turn);
+
+    // locate the current player's king
+    let mut king_position: Square = Square {rank: 8, file: 8};
+    for i in 0..8 {
+        for j in 0..8 {
+            let piece = board[i][j];
+            if piece.piece == PieceType::King && piece.color == turn {
+                king_position = Square {rank: i, file: j};
+            }
+        }
+    }
+
+    // check if any opponent move can take my king
+    let mut opponent_can_capture_king = false;
+    for legal_move in opponent_legal_moves {
+        if legal_move.to == king_position {
+            opponent_can_capture_king = true;
+        }
+    }
+
+    if legal_moves.len() == 0 && opponent_can_capture_king {
+        return Some(format!("{:?} wins", opponent_turn));
+    } else if legal_moves.len() == 0 && !opponent_can_capture_king {
+        return Some(format!("draw by stalemate"));
+    }
+
+    return None;
 }

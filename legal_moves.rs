@@ -6,7 +6,7 @@ use crate::piece::Color;
 use crate::board::Board;
 use crate::position::*;
 
-pub fn find_all_legal_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
+pub fn find_all_legal_moves(board: &Board, turn: Color, move_history: &Vec<MoveHistoryEntry>) -> Vec<Move> {
     let mut res: Vec<Move> = vec![];
 
     res.extend(find_basic_legal_moves(board, turn));
@@ -289,7 +289,7 @@ pub fn remove_moves_leading_to_check(legal_moves: &mut Vec<Move>, board: &Board,
 
 }
 
-pub fn find_en_passant_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
+pub fn find_en_passant_moves(board: &Board, turn: Color, move_history: &Vec<MoveHistoryEntry>) -> Vec<Move> {
     let mut res = vec![];
     let last_played_move_opt = move_history.last();
 
@@ -297,7 +297,7 @@ pub fn find_en_passant_moves(board: &Board, turn: Color, move_history: &Vec<Move
         return res;
     }
 
-    let last_played_move = last_played_move_opt.unwrap();
+    let last_played_move = &last_played_move_opt.unwrap().moveEntry;
 
     // last_played_move being PawnLongMove also implies that the color is opposite to turn
     // and that the piece is a pawn
@@ -368,7 +368,7 @@ pub fn find_en_passant_moves(board: &Board, turn: Color, move_history: &Vec<Move
     res
 }
 
-pub fn find_castling_moves(board: &Board, turn: Color, move_history: &Vec<Move>) -> Vec<Move> {
+pub fn find_castling_moves(board: &Board, turn: Color, move_history: &Vec<MoveHistoryEntry>) -> Vec<Move> {
     let mut res = vec![];
 
     if white_can_castle_long(board, move_history) && turn == Color::White {
@@ -410,15 +410,15 @@ pub fn find_castling_moves(board: &Board, turn: Color, move_history: &Vec<Move>)
     return res;
 }
 
-pub fn white_can_castle_long(board: &Board, move_history: &Vec<Move>) -> bool {
+pub fn white_can_castle_long(board: &Board, move_history: &Vec<MoveHistoryEntry>) -> bool {
     let mut king_rook_never_moved: bool = true;
     for hmove in move_history {
-        if hmove.piece.piece == PieceType::King && hmove.piece.color == Color::White {
+        if hmove.moveEntry.piece.piece == PieceType::King && hmove.moveEntry.piece.color == Color::White {
             king_rook_never_moved = false;
             break;
         }
-        if hmove.piece.piece == PieceType::Rook && hmove.piece.color == Color::White {
-            if hmove.from.file == 0 && hmove.from.rank == 0 {
+        if hmove.moveEntry.piece.piece == PieceType::Rook && hmove.moveEntry.piece.color == Color::White {
+            if hmove.moveEntry.from.file == 0 && hmove.moveEntry.from.rank == 0 {
                 king_rook_never_moved = false;
                 break;
             }
@@ -455,15 +455,15 @@ pub fn white_can_castle_long(board: &Board, move_history: &Vec<Move>) -> bool {
     return king_rook_never_moved && no_pieces_block_castle && no_check_in_king_path;
 }
 
-pub fn white_can_castle_short(board: &Board, move_history: &Vec<Move>) -> bool {
+pub fn white_can_castle_short(board: &Board, move_history: &Vec<MoveHistoryEntry>) -> bool {
     let mut king_rook_never_moved: bool = true;
     for hmove in move_history {
-        if hmove.piece.piece == PieceType::King && hmove.piece.color == Color::White {
+        if hmove.moveEntry.piece.piece == PieceType::King && hmove.moveEntry.piece.color == Color::White {
             king_rook_never_moved = false;
             break;
         }
-        if hmove.piece.piece == PieceType::Rook && hmove.piece.color == Color::White {
-            if hmove.from.file == 7 && hmove.from.rank == 0 {
+        if hmove.moveEntry.piece.piece == PieceType::Rook && hmove.moveEntry.piece.color == Color::White {
+            if hmove.moveEntry.from.file == 7 && hmove.moveEntry.from.rank == 0 {
                 king_rook_never_moved = false;
                 break;
             }
@@ -499,15 +499,15 @@ pub fn white_can_castle_short(board: &Board, move_history: &Vec<Move>) -> bool {
     return king_rook_never_moved && no_pieces_block_castle && no_check_in_king_path;
 }
 
-pub fn black_can_castle_long(board: &Board, move_history: &Vec<Move>) -> bool {
+pub fn black_can_castle_long(board: &Board, move_history: &Vec<MoveHistoryEntry>) -> bool {
     let mut king_rook_never_moved: bool = true;
     for hmove in move_history {
-        if hmove.piece.piece == PieceType::King && hmove.piece.color == Color::Black {
+        if hmove.moveEntry.piece.piece == PieceType::King && hmove.moveEntry.piece.color == Color::Black {
             king_rook_never_moved = false;
             break;
         }
-        if hmove.piece.piece == PieceType::Rook && hmove.piece.color == Color::Black {
-            if hmove.from.file == 0 && hmove.from.rank == 7 {
+        if hmove.moveEntry.piece.piece == PieceType::Rook && hmove.moveEntry.piece.color == Color::Black {
+            if hmove.moveEntry.from.file == 0 && hmove.moveEntry.from.rank == 7 {
                 king_rook_never_moved = false;
                 break;
             }
@@ -544,15 +544,15 @@ pub fn black_can_castle_long(board: &Board, move_history: &Vec<Move>) -> bool {
     return king_rook_never_moved && no_pieces_block_castle && no_check_in_king_path;
 }
 
-pub fn black_can_castle_short(board: &Board, move_history: &Vec<Move>) -> bool {
+pub fn black_can_castle_short(board: &Board, move_history: &Vec<MoveHistoryEntry>) -> bool {
     let mut king_rook_never_moved: bool = true;
     for hmove in move_history {
-        if hmove.piece.piece == PieceType::King && hmove.piece.color == Color::Black {
+        if hmove.moveEntry.piece.piece == PieceType::King && hmove.moveEntry.piece.color == Color::Black {
             king_rook_never_moved = false;
             break;
         }
-        if hmove.piece.piece == PieceType::Rook && hmove.piece.color == Color::Black {
-            if hmove.from.file == 7 && hmove.from.rank == 0 {
+        if hmove.moveEntry.piece.piece == PieceType::Rook && hmove.moveEntry.piece.color == Color::Black {
+            if hmove.moveEntry.from.file == 7 && hmove.moveEntry.from.rank == 0 {
                 king_rook_never_moved = false;
                 break;
             }

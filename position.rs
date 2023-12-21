@@ -1,4 +1,5 @@
 use crate::Piece;
+use crate::Board;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Square {
@@ -12,6 +13,13 @@ pub struct Move {
     pub to: Square,
     pub piece: Piece,
     pub special_move: Option<SpecialMoveType>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MoveHistoryEntry {
+    pub moveEntry: Move,
+    pub boardState: Board,
+    pub isCaptureMove: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]

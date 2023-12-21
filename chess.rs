@@ -4,18 +4,6 @@ mod piece;
 mod board;
 mod legal_moves;
 
-/*
-TODO
-    50 move draw rule ----> one tricky thing is the Capture moves
-     - moves should store capture to support this (in the move history mainly)
-     - loop on move history, is there any capture or pawn move
-    3 fold repetition ----> this is hard, might need to store all positions in a map with count?
-    insufficient material?
-     - should be the easiest, list all pieces on the board ,the insufficient combinations are
-        [wk, bk], [wk,wb, bk], [wk,wk, bk],
-                  [wk, bk,bb], [wk, bk,bk]
-*/
-
 use crate::piece::Piece;
 use crate::piece::PieceType;
 use crate::piece::Color;
@@ -32,19 +20,36 @@ fn main() {
 
     let mut move_history: Vec<MoveHistoryEntry> = Vec::new();
 
+    let mut three_fold_repetition_map = HashMap::new(); // (position, occurances_count)
+
     let mut board: Board = [[empty_piece; 8]; 8];
     let mut turn: Color = White;
     setup_board(&mut board);
     
     loop {
         println!("Current turn is {:?}", turn);
+        let mut current_position_str = String::new();
 
-        let mut legal_moves = find_all_legal_moves(&board, turn, &move_history);
-        for legal_move in legal_moves.iter() {
-            println!("{:?}", legal_move);
+        // the game position is serialized by printing board state and all legal moves
+        // TODO: optimize this board state
+        for rank in 0..8 {
+            for file in 0..8 {
+                current_position_str.push_str(&format!("{:?}", board[rank][file]));
+            }
         }
 
-        let game_result = evaluate_win_draw(turn, &board, &legal_moves, &move_history);
+        let legal_moves = find_all_legal_moves(&board, turn, &move_history);
+        for legal_move in legal_moves.iter() {
+            //println!("{:?}", legal_move);
+            current_position_str.push_str(&format!("{:?}", legal_move));
+        }
+
+        match three_fold_repetition_map.get(&current_position_str) {
+            Some(count) => { three_fold_repetition_map.insert(current_position_str, count + 1); }
+            None => { three_fold_repetition_map.insert(current_position_str, 1); }
+        }
+
+        let game_result = evaluate_win_draw(turn, &board, &legal_moves, &move_history, &three_fold_repetition_map);
         if let Some(result) = game_result {
             println!("{}", result);
             break;
@@ -91,11 +96,11 @@ fn main() {
         }
 
 
-        println!("----");
+        /*println!("----");
         for hist_move in move_history.iter() {
             println!("{:?}", hist_move);
         }
-        println!("----");
+        println!("----");*/
     }
 
 
@@ -191,10 +196,16 @@ fn prompt_promotion(board: &mut Board, square: Square) {
     }
 }
 
-fn evaluate_win_draw(turn: Color, board: &Board, legal_moves: &Vec<Move>, move_history: &Vec<MoveHistoryEntry>) -> Option<String> {
+fn evaluate_win_draw(
+    turn: Color, 
+    board: &Board, 
+    legal_moves: &Vec<Move>, 
+    move_history: &Vec<MoveHistoryEntry>,
+    three_fold_repetition_map: &HashMap<String, i32>,
+) -> Option<String> {
     if is_50_move_draw(move_history) {
         return Some(format!("draw by 50 move rule"));
-    } else if is_3_fold_repetition_draw(move_history) {
+    } else if is_3_fold_repetition_draw(three_fold_repetition_map) {
         return Some(format!("draw by 3 fold repetition"));
     } else if is_insuffiecient_material_draw(board) {
         return Some(format!("draw by insufficient material"));
@@ -234,7 +245,7 @@ fn evaluate_win_draw(turn: Color, board: &Board, legal_moves: &Vec<Move>, move_h
 fn is_50_move_draw(move_history: &Vec<MoveHistoryEntry>) -> bool {
     // since a move is defined as white turn then black turn, 2*50 MoveHistoryEntry structs need to be considered
     let move_history_len = move_history.len();
-    let mut start_index = 0;
+    let mut start_index;
 
     if move_history_len < 100 { // 50 moves haven't even been played yet
         return false;
@@ -295,11 +306,12 @@ fn is_insuffiecient_material_draw(board: &Board) -> bool {
     return false;
 }
 
-fn is_3_fold_repetition_draw(move_history: &Vec<MoveHistoryEntry>) -> bool {
-    // need to serialize board state and legal moves
-    //let board_state = serde_json::to_string(&move_history.boardState) 
+fn is_3_fold_repetition_draw(three_fold_repetition_map: &HashMap<String, i32>) -> bool {
+    for (_position, occurances) in three_fold_repetition_map {
+        if *occurances >= 3 {
+            return true;
+        }
+    }
 
-    // count in move history the occurances of all states
-    // if any state occured 3 times, declare a draw
     return false;
 }

@@ -16,14 +16,7 @@ pub fn setup_test_board(board: &mut Board) {
 }
 
 pub fn setup_board(board: &mut Board) {
-    board[0][0] = Piece {piece: King, color: Black};
-
-    board[2][0] = Piece {piece: King, color: White};
-    board[1][7] = Piece {piece: Queen, color: Black};
-    board[1][7] = Piece {piece: Queen, color: Black};
-    board[2][6] = Piece {piece: Bishop, color: White};
-    board[3][5] = Piece {piece: Bishop, color: Black};
-    /*board[0][0] = Piece {piece: Rook, color: White};
+    board[0][0] = Piece {piece: Rook, color: White};
     board[0][1] = Piece {piece: Knight, color: White};
     board[0][2] = Piece {piece: Bishop, color: White};
     board[0][3] = Piece {piece: Queen, color: White};
@@ -41,7 +34,7 @@ pub fn setup_board(board: &mut Board) {
     board[7][5] = Piece {piece: Bishop, color: Black};
     board[7][6] = Piece {piece: Knight, color: Black};
     board[7][7] = Piece {piece: Rook, color: Black};
-    board[6] = [Piece {piece: Pawn, color: Black}; 8];*/
+    board[6] = [Piece {piece: Pawn, color: Black}; 8];
 }
 
 pub fn print_board(board: Board) {

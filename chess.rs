@@ -7,8 +7,8 @@ mod legal_moves;
 /*
 TODO
     en passant  --- should be doable with move history now
-    queening
     castling long and short, never moved and won't be in check
+    queening
     evaluate win or draw
 */
 
@@ -33,7 +33,7 @@ fn main() {
     setup_board(&mut board);
     
     loop {
-        let mut legal_moves = find_all_legal_moves(&board, turn);
+        let mut legal_moves = find_all_legal_moves(&board, turn, &move_history);
         remove_moves_leading_to_check(&mut legal_moves, &board, turn);
         for legal_move in legal_moves.iter() {
             println!("{:?}", legal_move);
@@ -108,4 +108,14 @@ fn read_input_move() -> Result<Move, ()> {
 fn play_move(board: &mut Board, input_move: Move) {
     board[input_move.to.rank][input_move.to.file] = board[input_move.from.rank][input_move.from.file];
     board[input_move.from.rank][input_move.from.file] = Piece {piece: PieceType::Null, color: Color::Null};
+    
+    if input_move.special_move == Some(SpecialMoveType::EnPassant) {
+        if input_move.piece.color == Color::White {
+            let captured_pawn_square = move_down(input_move.to.clone()).unwrap();
+            board[captured_pawn_square.rank][captured_pawn_square.file] = Piece {piece: PieceType::Null, color: Color::Null};
+        } else if input_move.piece.color == Color::Black {
+            let captured_pawn_square = move_up(input_move.to.clone()).unwrap();
+            board[captured_pawn_square.rank][captured_pawn_square.file] = Piece {piece: PieceType::Null, color: Color::Null};
+        }
+    }
 }

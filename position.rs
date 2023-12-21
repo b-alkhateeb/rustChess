@@ -16,6 +16,7 @@ pub struct Move {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpecialMoveType {
+    PawnLongMove, // eg e2->e4, moving two squares at the start
     EnPassant,
     CastleLong,
     CastleShort,
